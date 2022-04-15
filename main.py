@@ -1,6 +1,29 @@
 import pygame
 from pygame.locals import *
 from pygame.color import Color
+from wonderwords import RandomWord
+
+
+class Word:
+    def __init__(self, game):
+        self.random_word = RandomWord().random_words()[0]
+        self.screen = game.screen
+        self.game = game
+
+    def draw(self):
+        start = 250
+        for i in range(len(self)):
+            end = start + i * 20 + 10
+            pygame.draw.line(self.screen, Color('blue'), (start + i * 20, 100), (end, 100), 5)
+
+    def __len__(self):
+        return len(self.random_word)
+
+    def update(self):
+        self.draw()
+
+    def __str__(self):
+        return self.random_word
 
 
 class Hangman:
@@ -11,9 +34,12 @@ class Hangman:
     def __init__(self, game):
         self.game = game
         self.screen = self.game.screen
+        self.word = Word(game)
+        print(self.word)
 
     def update(self):
         self.draw()
+        self.word.update()
 
     def draw(self):
         self.draw_gallows()
@@ -77,6 +103,10 @@ class Game:
             for ev in pygame.event.get():
                 if ev.type == QUIT:
                     run = False
+                if ev.type == KEYDOWN:
+                    if ev.key == K_n:
+                        self.scene[0].word = Word(self)
+                        print(self.scene[0].word)
             self.update()
 
     def update(self):
