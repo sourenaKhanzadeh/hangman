@@ -2,6 +2,35 @@ import pygame
 from pygame.locals import *
 from pygame.color import Color
 from wonderwords import RandomWord
+from tkinter.ttk import *
+from tkinter import Tk
+
+
+class Question(Tk):
+    def __init__(self, hangman):
+        super().__init__()
+        self.e = Entry()
+        self.btn = Button(self, text="Enter", command=self.click)
+        self.label = Label(text="Enter one letter please...")
+        self.hangman = hangman
+        self.game = hangman.game
+        self.screen = hangman.screen
+
+    def run(self):
+        self.mainloop()
+
+    def update(self):
+        self.label.pack()
+        self.e.pack()
+        self.btn.pack()
+        self.run()
+
+    def click(self):
+        word = str(self.hangman.word)
+        if self.e.get() in word:
+            for index in [i for i, x in enumerate(word) if x == self.e.get()]:
+                self.hangman.word.bits[index] = 1
+        self.destroy()
 
 
 class Word:
@@ -9,12 +38,18 @@ class Word:
         self.random_word = RandomWord().random_words()[0]
         self.screen = game.screen
         self.game = game
+        self.font = pygame.font.SysFont('calibri', 20)
+        self.bits = [0 for i in range(len(self))]
+        # print(pygame.font.get_fonts())
 
     def draw(self):
         start = 250
         for i in range(len(self)):
             end = start + i * 20 + 10
             pygame.draw.line(self.screen, Color('blue'), (start + i * 20, 100), (end, 100), 5)
+            if self.bits[i]:
+                text = self.font.render(self.random_word[i], False, Color('black'))
+                self.screen.blit(text, (start + i * 20, 75))
 
     def __len__(self):
         return len(self.random_word)
@@ -90,6 +125,7 @@ class Game:
     def __init__(self):
         self.scene = []
         self.screen = pygame.display.set_mode((Game.W, Game.H))
+        pygame.font.init()
 
     def awake(self):
         self.scene.append(Hangman(self))
@@ -98,6 +134,8 @@ class Game:
         run = True
         clock = pygame.time.Clock()
         self.awake()
+        font = pygame.font.SysFont('arial', 25)
+        text = font.render("Please Enter To Type The Letter", False, Color('blue'))
         while run:
             clock.tick(Game.FPS)
             for ev in pygame.event.get():
@@ -107,6 +145,9 @@ class Game:
                     if ev.key == K_n:
                         self.scene[0].word = Word(self)
                         print(self.scene[0].word)
+                    if ev.key == K_RETURN:
+                        Question(self.scene[0]).update()
+            self.screen.blit(text, (0, 500))
             self.update()
 
     def update(self):
