@@ -30,6 +30,9 @@ class Question(Tk):
         if self.e.get() in word:
             for index in [i for i, x in enumerate(word) if x == self.e.get()]:
                 self.hangman.word.bits[index] = 1
+        else:
+            if self.e.get() not in self.hangman.wrong:
+                self.hangman.wrong += self.e.get()
         self.destroy()
 
 
@@ -39,7 +42,7 @@ class Word:
         self.screen = game.screen
         self.game = game
         self.font = pygame.font.SysFont('calibri', 20)
-        self.bits = [0 for i in range(len(self))]
+        self.bits = [0 for _ in range(len(self))]
         # print(pygame.font.get_fonts())
 
     def draw(self):
@@ -60,16 +63,21 @@ class Word:
     def __str__(self):
         return self.random_word
 
+    def __del__(self):
+        del self.screen
+        del self.game
+
 
 class Hangman:
     WIDTH = 10
-    MISTAKES = 7
-    CHANCE = 0
+    MISTAKES = 6
 
     def __init__(self, game):
         self.game = game
         self.screen = self.game.screen
         self.word = Word(game)
+        self.wrong = ""
+        self.font = pygame.font.SysFont('arial', 30)
         print(self.word)
 
     def update(self):
@@ -78,18 +86,19 @@ class Hangman:
 
     def draw(self):
         self.draw_gallows()
-        if Hangman.CHANCE >= 1:
+        if len(self) >= 1:
             self.draw_head()
-        if Hangman.CHANCE >= 2:
+        if len(self) >= 2:
             self.draw_body()
-        if Hangman.CHANCE >= 3:
+        if len(self) >= 3:
             self.draw_arm_one()
-        if Hangman.CHANCE >= 4:
+        if len(self) >= 4:
             self.draw_arm_two()
-        if Hangman.CHANCE >= 5:
+        if len(self) >= 5:
             self.draw_leg_one()
-        if Hangman.CHANCE >= 6:
+        if len(self) >= 6:
             self.draw_leg_two()
+        self.draw_wrongs()
 
     def draw_leg_one(self):
         pygame.draw.line(self.screen, Color('red'), (200, 300), (150, 350), Hangman.WIDTH)
@@ -116,6 +125,21 @@ class Hangman:
                          Hangman.WIDTH)
         pygame.draw.line(self.screen, Color('black'), (200, 100), (200, 200), Hangman.WIDTH)
 
+    def draw_wrongs(self):
+        index = 0
+        for i in self.wrong:
+            text = self.font.render(i, False, Color('red'))
+            self.screen.blit(text, (250 + index * 20, 400))
+            index += 1
+
+    def __len__(self):
+        return len(self.wrong)
+
+    def __del__(self):
+        del self.word
+        del self.game
+        del self.screen
+
 
 class Game:
     FPS = 60
@@ -135,7 +159,6 @@ class Game:
         clock = pygame.time.Clock()
         self.awake()
         font = pygame.font.SysFont('arial', 25)
-        text = font.render("Please Enter To Type The Letter", False, Color('blue'))
         while run:
             clock.tick(Game.FPS)
             for ev in pygame.event.get():
@@ -143,10 +166,18 @@ class Game:
                     run = False
                 if ev.type == KEYDOWN:
                     if ev.key == K_n:
-                        self.scene[0].word = Word(self)
-                        print(self.scene[0].word)
+                        hangman = self.scene[0]
+                        self.scene[0] = None
+                        del hangman
+                        self.scene[0] = Hangman(self)
                     if ev.key == K_RETURN:
                         Question(self.scene[0]).update()
+            if len(self.scene[0].wrong) == Hangman.MISTAKES:
+                text = font.render("You Lost, Please Press N To Start A New game", False, Color('red'))
+            elif all(self.scene[0].word.bits):
+                text = font.render("You Won, Please Press N To Start A New game", False, Color('green'))
+            else:
+                text = font.render("Please Enter To Type The Letter", False, Color('blue'))
             self.screen.blit(text, (0, 500))
             self.update()
 
